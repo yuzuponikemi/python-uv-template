@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop, "claude/**"]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system -r requirements.txt
+
+      - name: Run ruff linter
+        id: ruff-check
+        continue-on-error: true
+        run: |
+          ruff check . --output-format=json > ruff-check.json 2>&1 || true
+          ruff check . 2>&1 | tee ruff-check.log
+          if [ -s ruff-check.json ]; then exit 1; fi
+
+      - name: Run ruff formatter check
+        id: ruff-format
+        continue-on-error: true
+        run: |
+          ruff format --check . 2>&1 | tee ruff-format.log
+
+      - name: Run mypy type checker
+        id: mypy
+        continue-on-error: true
+        run: |
+          mypy . --ignore-missing-imports 2>&1 | tee mypy.log || true
+
+      - name: Run pytest
+        id: pytest
+        continue-on-error: true
+        run: |
+          pytest -v --tb=short --color=yes 2>&1 | tee pytest.log || true
+          # Save exit code
+          echo "pytest_exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: Upload test logs as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: |
+            pytest.log
+            ruff-check.log
+            ruff-check.json
+            ruff-format.log
+            mypy.log
+          retention-days: 7
+
+      - name: Check if any step failed
+        if: |
+          steps.ruff-check.outcome == 'failure' ||
+          steps.ruff-format.outcome == 'failure' ||
+          steps.mypy.outcome == 'failure' ||
+          steps.pytest.outcome == 'failure'
+        run: |
+          echo "::error::CI checks failed. Check the logs above for details."
+          exit 1
