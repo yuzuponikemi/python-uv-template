@@ -71,3 +71,7 @@ strict_equality = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[tool.bandit]
+exclude_dirs = ["tests", "benchmarks", "examples"]
+skips = ["B101"]  # Skip assert_used in test files
