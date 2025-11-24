@@ -1,0 +1,71 @@
+name: ✨ 機能リクエスト
+description: 新機能やエンハンスメントを提案する
+title: "[Feature]: "
+labels: ["enhancement"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        機能リクエストありがとうございます！
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解決したい問題
+      description: この機能で解決したい問題は何ですか？
+      placeholder: |
+        「〜の時に困っている」という形式で説明してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 提案する解決策
+      description: どのような機能を追加すべきですか？
+      placeholder: |
+        明確かつ簡潔に希望する解決策を説明してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 代替案
+      description: 検討した代替案はありますか？
+    validations:
+      required: false
+
+  - type: textarea
+    id: example
+    attributes:
+      label: 使用例
+      description: この機能をどのように使用しますか？
+      render: python
+      placeholder: |
+        # 期待される使用方法
+        result = new_feature(input_data)
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度
+      description: この機能の優先度は？
+      options:
+        - 低 - あると便利
+        - 中 - 重要だが急ぎではない
+        - 高 - すぐに必要
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: コントリビューション
+      description: この機能の実装を手伝えますか？
+      options:
+        - label: Pull Requestを送る意思があります
+          required: false

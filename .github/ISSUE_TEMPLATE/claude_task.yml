@@ -1,0 +1,71 @@
+name: 🤖 Claude タスク
+description: Claude Codeに実装を依頼する
+title: "[Claude]: "
+labels: ["claude"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Claude Codeにタスクを依頼します。@claude をメンションすることで自動的に処理されます。
+
+  - type: textarea
+    id: task
+    attributes:
+      label: タスクの説明
+      description: Claudeに何をしてほしいですか？
+      placeholder: |
+        @claude
+
+        新しいデータ処理関数を実装してください。
+
+        要件:
+        - CSVファイルを読み込んで欠損値を処理
+        - テストを先に書いてください（TDD）
+        - 型ヒントとdocstringを含めてください
+    validations:
+      required: true
+
+  - type: dropdown
+    id: task_type
+    attributes:
+      label: タスクの種類
+      options:
+        - 新機能の実装
+        - バグ修正
+        - リファクタリング
+        - テスト追加
+        - ドキュメント更新
+        - パフォーマンス最適化
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 追加コンテキスト
+      description: 参考情報やファイルパスなど
+      placeholder: |
+        関連ファイル:
+        - src/data_processor.py
+        - tests/test_data_processor.py
+
+        参考:
+        - https://...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: requirements
+    attributes:
+      label: 要件チェックリスト
+      description: Claudeに従ってほしい要件
+      options:
+        - label: テスト駆動開発（TDD）でテストを先に書く
+          required: false
+        - label: 型ヒントを追加
+          required: false
+        - label: Docstringを含める
+          required: false
+        - label: テストカバレッジ80%以上
+          required: false
