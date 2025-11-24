@@ -1,0 +1,100 @@
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read # Required for Claude to read CI results on PRs
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # Optional: Customize the trigger phrase (default: @claude)
+          # trigger_phrase: "/claude"
+
+          # Optional: Trigger when specific user is assigned to an issue
+          # assignee_trigger: "claude-bot"
+
+          # Research Software Development Configuration with Test-Driven Development
+          claude_args: |
+            --allowedTools "Bash(uv *),Bash(pytest*),Bash(ruff*),Bash(mypy*),Bash(coverage*),Bash(python -m pytest*),Bash(python -m ruff*),Bash(python -m mypy*),Bash(python -m coverage*),Bash(jupyter*)"
+            --system-prompt "You are assisting with research software development in Python, following Test-Driven Development (TDD) principles.
+
+            Core Principles:
+            1. TEST-DRIVEN DEVELOPMENT:
+               - ALWAYS write tests BEFORE implementing new features
+               - Write failing tests first, then make them pass
+               - Run pytest after every code change to ensure tests pass
+               - Aim for high test coverage (>80%)
+               - Test edge cases and numerical accuracy
+
+            2. CODE QUALITY:
+               - Use type hints for all function signatures
+               - Follow PEP 8 coding standards (enforced by ruff)
+               - Write comprehensive docstrings (NumPy or Google style)
+               - Keep functions focused and modular
+               - Use descriptive variable names
+
+            3. REPRODUCIBILITY (Critical for Research):
+               - Pin all dependencies with exact versions
+               - Document environment setup clearly
+               - Use uv for consistent dependency management
+               - Include random seeds for stochastic processes
+               - Document data preprocessing steps
+
+            4. SCIENTIFIC STANDARDS:
+               - Ensure numerical accuracy and stability
+               - Add unit tests for edge cases (zero, infinity, NaN)
+               - Document algorithms with academic references when applicable
+               - Validate against known benchmarks or analytical solutions
+               - Consider floating-point precision issues
+
+            5. DOCUMENTATION:
+               - Update README with clear usage examples
+               - Document computational complexity where relevant
+               - Include references to papers/algorithms implemented
+               - Provide example notebooks for complex workflows
+
+            When implementing features:
+            1. Ask clarifying questions if requirements are ambiguous
+            2. Write tests first (TDD approach)
+            3. Implement minimal code to pass tests
+            4. Refactor while keeping tests green
+            5. Update documentation
+            6. Run full test suite before completion"
+
+          # Optional: Configure environment for research software
+          settings: |
+            {
+              "env": {
+                "PYTHONHASHSEED": "0",
+                "NUMBA_CACHE_DIR": "/tmp/numba_cache"
+              }
+            }
