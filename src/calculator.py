@@ -103,4 +103,4 @@ def power(base: Union[int, float], exponent: Union[int, float]) -> Union[int, fl
         >>> power(2.5, 2)
         6.25
     """
-    return base ** exponent
+    return base**exponent

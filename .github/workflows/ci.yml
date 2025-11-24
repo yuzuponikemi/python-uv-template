@@ -28,7 +28,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install --system -r requirements.txt
+          uv pip install --system -r requirements.in
 
       - name: Run ruff linter
         id: ruff-check
@@ -54,7 +54,7 @@ jobs:
         id: pytest
         continue-on-error: true
         run: |
-          pytest -v --tb=short --color=yes 2>&1 | tee pytest.log || true
+          python -m pytest -v --tb=short --color=yes 2>&1 | tee pytest.log || true
           # Save exit code
           echo "pytest_exit_code=$?" >> $GITHUB_OUTPUT
 

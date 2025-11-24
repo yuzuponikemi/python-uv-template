@@ -4,7 +4,8 @@ Following TDD principles, these tests validate the calculator functionality.
 """
 
 import pytest
-from src.calculator import add, subtract, multiply, divide, power
+
+from src.calculator import add, divide, multiply, power, subtract
 
 
 class TestAdd:
