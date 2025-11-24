@@ -34,9 +34,7 @@ jobs:
         id: ruff-check
         continue-on-error: true
         run: |
-          ruff check . --output-format=json > ruff-check.json 2>&1 || true
           ruff check . 2>&1 | tee ruff-check.log
-          if [ -s ruff-check.json ]; then exit 1; fi
 
       - name: Run ruff formatter check
         id: ruff-format
@@ -48,15 +46,13 @@ jobs:
         id: mypy
         continue-on-error: true
         run: |
-          mypy . --ignore-missing-imports 2>&1 | tee mypy.log || true
+          mypy --ignore-missing-imports 2>&1 | tee mypy.log
 
       - name: Run pytest
         id: pytest
         continue-on-error: true
         run: |
-          python -m pytest -v --tb=short --color=yes 2>&1 | tee pytest.log || true
-          # Save exit code
-          echo "pytest_exit_code=$?" >> $GITHUB_OUTPUT
+          python -m pytest -v --tb=short --color=yes 2>&1 | tee pytest.log
 
       - name: Upload test logs as artifacts
         if: always()
@@ -66,7 +62,6 @@ jobs:
           path: |
             pytest.log
             ruff-check.log
-            ruff-check.json
             ruff-format.log
             mypy.log
           retention-days: 7
