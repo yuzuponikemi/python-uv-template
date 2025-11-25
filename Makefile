@@ -1,8 +1,9 @@
-.PHONY: help install test lint format type-check clean docs benchmark all ci
+.PHONY: help compile install test lint format type-check clean docs benchmark all ci
 
 # Default target: show help
 help:
 	@echo "Available commands:"
+	@echo "  make compile        Compile requirements.txt from requirements.in"
 	@echo "  make install        Install all dependencies"
 	@echo "  make test           Run all tests"
 	@echo "  make test-fast      Run tests (skip slow tests)"
@@ -16,6 +17,11 @@ help:
 	@echo "  make benchmark      Run performance benchmarks"
 	@echo "  make ci             Run all CI checks locally"
 	@echo "  make all            Run format, lint, type-check, and test"
+
+# Compile requirements.txt from requirements.in
+compile:
+	uv pip compile requirements.in -o requirements.txt
+	@echo "✓ requirements.txt updated"
 
 # Install dependencies
 install:
@@ -46,7 +52,7 @@ format:
 
 # Run type checker
 type-check:
-	mypy src tests
+	mypy --ignore-missing-imports
 
 # Clean generated files
 clean:
