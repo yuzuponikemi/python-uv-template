@@ -98,14 +98,45 @@ git push -u origin claude/add-new-feature
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 依存関係のインストール
-uv pip install -r requirements.txt
+make install
 
 # テストの実行
-pytest
+make test
 
 # リンターの実行
-ruff check .
+make lint
 
 # フォーマッターの実行
-ruff format .
+make format
+
+# 全てのCIチェック
+make ci
 ```
+
+## 依存関係の管理
+
+このプロジェクトは **uv** による依存関係の固定管理を採用しています。
+
+### ファイルの役割
+
+- **`requirements.in`**: 人間が編集するトップレベルの依存関係
+- **`requirements.txt`**: uvが自動生成する完全な依存関係リスト（全バージョン固定）
+
+### 依存関係を追加する場合
+
+1. `requirements.in` を編集して依存関係を追加
+2. `make compile` を実行して `requirements.txt` を更新
+3. 変更をコミット（両方のファイルをコミット）
+
+```bash
+# requirements.in に新しいパッケージを追加
+echo "scikit-learn>=1.3.0" >> requirements.in
+
+# requirements.txt を更新
+make compile
+
+# インストール
+make install
+```
+
+**注意**: CIが自動的に `requirements.txt` を最新化してコミットします。

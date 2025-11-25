@@ -63,6 +63,36 @@ pre-commit install
    git checkout -b claude/your-feature-name
    ```
 
+#### 依存関係の管理
+
+このプロジェクトは **再現性を重視** して依存関係を管理しています。
+
+**ファイルの役割:**
+- `requirements.in`: 人間が編集するトップレベルの依存関係（最小バージョンのみ指定）
+- `requirements.txt`: uvが自動生成する完全な依存関係リスト（全バージョン厳密に固定）
+
+**新しい依存関係を追加する手順:**
+
+```bash
+# 1. requirements.in を編集
+echo "scikit-learn>=1.3.0" >> requirements.in
+
+# 2. requirements.txt を更新
+make compile
+
+# 3. インストール
+make install
+
+# 4. 両方のファイルをコミット
+git add requirements.in requirements.txt
+git commit -m "Add scikit-learn dependency"
+```
+
+**注意:**
+- CIが自動的に `requirements.txt` を最新化してコミットします
+- `requirements.in` だけを変更してpushすれば、CIが自動でcompileします
+- 完全な再現性のため、必ず両方のファイルをコミットしてください
+
 #### 開発ワークフロー（TDD）
 
 **重要**: このプロジェクトはテスト駆動開発（TDD）を採用しています。
