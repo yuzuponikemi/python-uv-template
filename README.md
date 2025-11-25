@@ -40,7 +40,10 @@ agent:
   model: gemini-2.0-flash-exp
 ```
 
-詳細は [エージェント抽象化ドキュメント](docs/AGENT_ABSTRACTION.md) を参照してください。
+**詳細ドキュメント:**
+- [エージェント抽象化の概要](docs/AGENT_ABSTRACTION.md) - Python APIの使い方
+- [エージェント別セットアップガイド](docs/AGENT_SETUP_GUIDE.md) - 各エージェントの実装と設定手順
+- [GitHub Actions統合ガイド](docs/GITHUB_ACTIONS_INTEGRATION.md) - CI/CDでの使用方法
 
 ### 使用例
 
