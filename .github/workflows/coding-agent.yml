@@ -1,0 +1,174 @@
+name: Coding Agent
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  # Determine which agent to use
+  detect-agent:
+    runs-on: ubuntu-latest
+    outputs:
+      agent_type: ${{ steps.config.outputs.agent_type }}
+      trigger_matched: ${{ steps.check-trigger.outputs.matched }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Read agent configuration
+        id: config
+        run: |
+          # Read agent type from .agent-config.yml
+          if [ -f .agent-config.yml ]; then
+            AGENT_TYPE=$(grep -A 1 '^agent:' .agent-config.yml | grep 'type:' | awk '{print $2}')
+            echo "agent_type=${AGENT_TYPE}" >> $GITHUB_OUTPUT
+          else
+            echo "agent_type=claude_code" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check trigger phrase
+        id: check-trigger
+        run: |
+          MATCHED=false
+
+          # Check for trigger phrases (@claude, @ai, etc.)
+          if [ "${{ github.event_name }}" == "issue_comment" ]; then
+            if echo "${{ github.event.comment.body }}" | grep -qE '@(claude|ai)'; then
+              MATCHED=true
+            fi
+          elif [ "${{ github.event_name }}" == "pull_request_review_comment" ]; then
+            if echo "${{ github.event.comment.body }}" | grep -qE '@(claude|ai)'; then
+              MATCHED=true
+            fi
+          elif [ "${{ github.event_name }}" == "pull_request_review" ]; then
+            if echo "${{ github.event.review.body }}" | grep -qE '@(claude|ai)'; then
+              MATCHED=true
+            fi
+          elif [ "${{ github.event_name }}" == "issues" ]; then
+            if echo "${{ github.event.issue.body }} ${{ github.event.issue.title }}" | grep -qE '@(claude|ai)'; then
+              MATCHED=true
+            fi
+          fi
+
+          echo "matched=${MATCHED}" >> $GITHUB_OUTPUT
+
+  # Run Claude Code agent
+  claude-code:
+    needs: detect-agent
+    if: |
+      needs.detect-agent.outputs.trigger_matched == 'true' &&
+      needs.detect-agent.outputs.agent_type == 'claude_code'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Load configuration
+        id: load-config
+        run: |
+          # Load system prompt and other settings from .agent-config.yml
+          if [ -f .agent-config.yml ]; then
+            # Extract allowed tools
+            echo "Config file found, loading settings..."
+          fi
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Bash(uv *),Bash(pytest*),Bash(ruff*),Bash(mypy*),Bash(coverage*),Bash(python -m pytest*),Bash(python -m ruff*),Bash(python -m mypy*),Bash(python -m coverage*),Bash(jupyter*)"
+            --system-prompt "You are assisting with research software development in Python, following Test-Driven Development (TDD) principles.
+
+            Core Principles:
+            1. TEST-DRIVEN DEVELOPMENT:
+               - ALWAYS write tests BEFORE implementing new features
+               - Write failing tests first, then make them pass
+               - Run pytest after every code change to ensure tests pass
+               - Aim for high test coverage (>80%)
+               - Test edge cases and numerical accuracy
+
+            2. CODE QUALITY:
+               - Use type hints for all function signatures
+               - Follow PEP 8 coding standards (enforced by ruff)
+               - Write comprehensive docstrings (NumPy or Google style)
+               - Keep functions focused and modular
+               - Use descriptive variable names
+
+            3. REPRODUCIBILITY (Critical for Research):
+               - Pin all dependencies with exact versions
+               - Document environment setup clearly
+               - Use uv for consistent dependency management
+               - Include random seeds for stochastic processes
+               - Document data preprocessing steps
+
+            4. SCIENTIFIC STANDARDS:
+               - Ensure numerical accuracy and stability
+               - Add unit tests for edge cases (zero, infinity, NaN)
+               - Document algorithms with academic references when applicable
+               - Validate against known benchmarks or analytical solutions
+               - Consider floating-point precision issues
+
+            5. DOCUMENTATION:
+               - Update README with clear usage examples
+               - Document computational complexity where relevant
+               - Include references to papers/algorithms implemented
+               - Provide example notebooks for complex workflows
+
+            When implementing features:
+            1. Ask clarifying questions if requirements are ambiguous
+            2. Write tests first (TDD approach)
+            3. Implement minimal code to pass tests
+            4. Refactor while keeping tests green
+            5. Update documentation
+            6. Run full test suite before completion"
+
+  # Run other agents (Gemini, Codex, SWE-agent)
+  # These would require custom implementations or wrapper scripts
+  other-agents:
+    needs: detect-agent
+    if: |
+      needs.detect-agent.outputs.trigger_matched == 'true' &&
+      needs.detect-agent.outputs.agent_type != 'claude_code'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests
+
+      - name: Run agent wrapper
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_TYPE: ${{ needs.detect-agent.outputs.agent_type }}
+        run: |
+          echo "Agent type: $AGENT_TYPE"
+          echo "This would run the configured agent: $AGENT_TYPE"
+          echo "Implementation pending for non-Claude agents"
+          # TODO: Implement wrapper script to handle other agents

@@ -13,3 +13,7 @@ pandas>=2.0.0
 
 # Type stubs for mypy
 pandas-stubs>=2.0.0
+
+# Configuration management
+pyyaml>=6.0.0
+types-PyYAML>=6.0.0  # Type stubs for mypy

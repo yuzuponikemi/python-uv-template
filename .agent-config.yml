@@ -1,0 +1,76 @@
+# Coding Agent Configuration
+# This file controls which AI coding agent is used for automated tasks
+
+# Agent selection: claude_code, gemini, codex, swe_agent
+agent:
+  type: claude_code  # Default agent
+
+  # Model configuration (optional, uses agent defaults if not specified)
+  # model: claude-sonnet-4-5-20250929  # For Claude Code
+  # model: gemini-2.0-flash-exp        # For Gemini
+  # model: gpt-4-turbo                 # For Codex/SWE-agent
+
+  # Generation parameters
+  max_tokens: 4096
+  temperature: 0.7
+
+  # System prompt (optional, uses agent defaults if not specified)
+  # system_prompt: |
+  #   You are a coding assistant following Test-Driven Development...
+
+  # Allowed tools/commands (optional)
+  allowed_tools:
+    - "Bash(uv *)"
+    - "Bash(pytest*)"
+    - "Bash(ruff*)"
+    - "Bash(mypy*)"
+    - "Bash(coverage*)"
+    - "Bash(python -m pytest*)"
+    - "Bash(python -m ruff*)"
+    - "Bash(python -m mypy*)"
+    - "Bash(python -m coverage*)"
+    - "Bash(jupyter*)"
+
+# Agent-specific settings
+claude_code:
+  # API key environment variable: ANTHROPIC_API_KEY
+  model: claude-sonnet-4-5-20250929
+  tdd_mode: true
+  research_software_mode: true
+
+gemini:
+  # API key environment variable: GOOGLE_API_KEY
+  model: gemini-2.0-flash-exp
+  multimodal: true
+
+codex:
+  # API key environment variable: OPENAI_API_KEY
+  model: gpt-4-turbo
+  function_calling: true
+
+swe_agent:
+  # API key environment variable: OPENAI_API_KEY (or other backend)
+  model: gpt-4-turbo
+  backend: openai
+  autonomous_mode: true
+
+# GitHub Actions integration
+github:
+  # Enable auto-fix on CI failures
+  auto_fix_enabled: true
+
+  # Branches where auto-fix is active
+  auto_fix_branches:
+    - "claude/**"
+    - "ai/**"
+
+  # Trigger phrases for manual invocation
+  trigger_phrases:
+    - "@claude"
+    - "@ai"
+
+  # Workflows to run on agent branches
+  ci_workflows:
+    - pytest
+    - ruff
+    - mypy
