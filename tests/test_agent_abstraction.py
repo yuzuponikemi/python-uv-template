@@ -13,9 +13,18 @@ from src.agent_abstraction import (
     ClaudeCodeAgent,
     CodexAgent,
     ConfigLoader,
+    CopilotAgent,
     GeminiAgent,
     SWEAgent,
 )
+
+# Check if optional dependencies are available
+try:
+    import openai  # noqa: F401
+
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
 
 
 class TestAgentConfig:
@@ -108,6 +117,16 @@ class TestAgentFactory:
         with pytest.raises(ValueError, match="Unsupported agent type"):
             AgentFactory.create_agent(agent_type="invalid_type", api_key="test_key")
 
+    @pytest.mark.skipif(not OPENAI_AVAILABLE, reason="openai not installed")
+    def test_create_copilot_agent(self) -> None:
+        """Test creating a Copilot agent."""
+        agent = AgentFactory.create_agent(
+            agent_type=AgentType.COPILOT, api_key="test_key", model="gpt-4-turbo"
+        )
+
+        assert isinstance(agent, CopilotAgent)
+        assert agent.config.agent_type == AgentType.COPILOT
+
     def test_get_supported_agents(self) -> None:
         """Test getting list of supported agents."""
         supported = AgentFactory.get_supported_agents()
@@ -116,6 +135,7 @@ class TestAgentFactory:
         assert "gemini" in supported
         assert "codex" in supported
         assert "swe_agent" in supported
+        assert "copilot" in supported
 
 
 class TestClaudeCodeAgent:
@@ -235,3 +255,44 @@ class TestConfigLoader:
         assert saved_data["agent"]["model"] == "gemini-2.0-flash-exp"
         assert saved_data["agent"]["max_tokens"] == 2048
         assert saved_data["agent"]["temperature"] == 0.5
+
+
+@pytest.mark.skipif(not OPENAI_AVAILABLE, reason="openai not installed")
+class TestCopilotAgent:
+    """Tests for CopilotAgent."""
+
+    def test_copilot_agent_creation(self) -> None:
+        """Test creating a Copilot agent."""
+        config = AgentConfig(
+            agent_type=AgentType.COPILOT,
+            api_key="test_key",
+            model="gpt-4-turbo",
+        )
+        agent = CopilotAgent(config)
+
+        assert agent.config.model == "gpt-4-turbo"
+
+    def test_copilot_agent_default_model(self) -> None:
+        """Test Copilot agent sets default model."""
+        config = AgentConfig(agent_type=AgentType.COPILOT, api_key="test_key")
+        agent = CopilotAgent(config)
+
+        assert agent.config.model == "gpt-4-turbo"
+
+    def test_copilot_agent_requires_api_key(self) -> None:
+        """Test Copilot agent requires API key."""
+        config = AgentConfig(agent_type=AgentType.COPILOT)
+
+        with pytest.raises(ValueError, match="OPENAI_API_KEY is required"):
+            CopilotAgent(config)
+
+    def test_copilot_agent_capabilities(self) -> None:
+        """Test Copilot agent capabilities."""
+        config = AgentConfig(agent_type=AgentType.COPILOT, api_key="test_key")
+        agent = CopilotAgent(config)
+
+        capabilities = agent.get_capabilities()
+
+        assert capabilities["github_integration"] is True
+        assert capabilities["cli_mode"] is True
+        assert capabilities["function_calling"] is True

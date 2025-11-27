@@ -13,6 +13,7 @@ class AgentType(Enum):
     GEMINI = "gemini"
     CODEX = "codex"
     SWE_AGENT = "swe_agent"
+    COPILOT = "copilot"
 
 
 @dataclass

@@ -6,6 +6,7 @@ from typing import Any, Optional, Union
 from .base_agent import AgentConfig, AgentType, BaseAgent
 from .claude_code import ClaudeCodeAgent
 from .codex import CodexAgent
+from .copilot import CopilotAgent
 from .gemini import GeminiAgent
 from .swe_agent import SWEAgent
 
@@ -18,6 +19,7 @@ class AgentFactory:
         AgentType.GEMINI: GeminiAgent,
         AgentType.CODEX: CodexAgent,
         AgentType.SWE_AGENT: SWEAgent,
+        AgentType.COPILOT: CopilotAgent,
     }
 
     @classmethod
@@ -108,6 +110,7 @@ class AgentFactory:
             AgentType.GEMINI: "GOOGLE_API_KEY",
             AgentType.CODEX: "OPENAI_API_KEY",
             AgentType.SWE_AGENT: "OPENAI_API_KEY",  # SWE-agent can use OpenAI
+            AgentType.COPILOT: "OPENAI_API_KEY",  # Copilot uses OpenAI backend
         }
 
         env_var = env_var_map.get(agent_type)
