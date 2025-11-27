@@ -37,12 +37,16 @@ python-dateutil==2.9.0.post0
     # via pandas
 pytz==2025.2
     # via pandas
+pyyaml==6.0.3
+    # via -r requirements.in
 ruff==0.14.6
     # via -r requirements.in
 six==1.17.0
     # via python-dateutil
 types-pytz==2025.2.0.20251108
     # via pandas-stubs
+types-pyyaml==6.0.12.20250915
+    # via -r requirements.in
 typing-extensions==4.15.0
     # via mypy
 tzdata==2025.2

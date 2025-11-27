@@ -6,24 +6,50 @@ Python研究用ソフトウェア開発のテンプレートリポジトリで�
 
 - **uv** による高速な依存関係管理
 - **テスト駆動開発** を前提とした構成
-- **Claude Code** による自動化されたコード支援
+- **複数のAIコーディングエージェント** をサポート（Claude Code、Gemini、Codex、SWE-agent）
+- **エージェント抽象化レイヤー** により簡単なエージェント切り替えが可能
 - 研究用ソフトウェアに最適化された設定
 
-## Claude Code の使い方
+## AIコーディングエージェントの使い方
 
-このテンプレートには、GitHub上で `@claude` とメンションするだけでAIアシスタントが作業を支援するワークフローが含まれています。
+このテンプレートは、複数のAIコーディングエージェントをサポートしています。GitHub上で `@claude` や `@ai` とメンションするだけで、設定されたエージェントが作業を支援します。
+
+### サポートされているエージェント
+
+| エージェント | 特徴 | API Key |
+|------------|------|---------|
+| **Claude Code** (デフォルト) | TDD、研究ソフトウェア、GitHub統合 | `ANTHROPIC_API_KEY` |
+| **Gemini** | 高速、長コンテキスト、マルチモーダル | `GOOGLE_API_KEY` |
+| **Codex/GPT** | 汎用性、関数呼び出し | `OPENAI_API_KEY` |
+| **SWE-agent** | 自律デバッグ、オープンソース | `OPENAI_API_KEY` |
 
 ### セットアップ
 
 1. このテンプレートから新しいリポジトリを作成
-2. リポジトリの Settings > Secrets and variables > Actions で `ANTHROPIC_API_KEY` を設定
-3. Issue や Pull Request で `@claude` とメンションして使用開始
+2. `.agent-config.yml` で使用するエージェントを選択（デフォルトは Claude Code）
+3. リポジトリの Settings > Secrets and variables > Actions で必要な API Key を設定
+4. Issue や Pull Request で `@claude` または `@ai` とメンションして使用開始
+
+### エージェントの選択
+
+`.agent-config.yml` ファイルでエージェントを変更できます：
+
+```yaml
+agent:
+  type: gemini  # claude_code, gemini, codex, swe_agent
+  model: gemini-2.0-flash-exp
+```
+
+**詳細ドキュメント:**
+- [エージェント抽象化の概要](docs/AGENT_ABSTRACTION.md) - Python APIの使い方
+- [エージェント別セットアップガイド](docs/AGENT_SETUP_GUIDE.md) - 各エージェントの実装と設定手順
+- [GitHub Actions統合ガイド](docs/GITHUB_ACTIONS_INTEGRATION.md) - CI/CDでの使用方法
 
 ### 使用例
 
 **Issue でのタスク依頼:**
 ```
-新しいデータ処理関数を実装してください @claude
+新しいデータ処理関数を実装してください @ai
 
 要件:
 - CSVファイルを読み込んで欠損値を処理
@@ -38,10 +64,12 @@ Python研究用ソフトウェア開発のテンプレートリポジトリで�
 
 **コードの改善依頼:**
 ```
-この関数のパフォーマンスを最適化して、ベンチマークテストも追加してください @claude
+この関数のパフォーマンスを最適化して、ベンチマークテストも追加してください @ai
 ```
 
-### Claudeが従う原則
+### コーディングエージェントが従う原則
+
+すべてのエージェントは以下の原則に従います：
 
 1. **テスト駆動開発**: 実装前にテストを書きます
 2. **型安全性**: すべての関数に型ヒントを追加
@@ -51,31 +79,31 @@ Python研究用ソフトウェア開発のテンプレートリポジトリで�
 
 ## 自律的コード修正機能
 
-このテンプレートには、CIテストが失敗した際に自動的にClaudeが修正を試みる機能が組み込まれています。
+このテンプレートには、CIテストが失敗した際に自動的にエージェントが修正を試みる機能が組み込まれています。
 
 ### 仕組み
 
-1. **CI ワークフロー** (`ci.yml`): `claude/**` ブランチにpushすると自動的にテスト・リンター・型チェックを実行
+1. **CI ワークフロー** (`ci.yml`): `claude/**` または `ai/**` ブランチにpushすると自動的にテスト・リンター・型チェックを実行
 2. **自動修正ワークフロー** (`auto-fix.yml`): CIが失敗した場合、自動的に実行され：
    - エラーログを収集・分析
-   - 修正用のIssueを自動作成し、`@claude` をメンション
-   - Claudeがエラーを解析して修正を実装
+   - 修正用のIssueを自動作成し、エージェントをメンション
+   - エージェントがエラーを解析して修正を実装
    - 修正を同じブランチにコミット
 
 ### 動作例
 
 ```bash
-# 1. 新しい機能ブランチを作成（claude/ プレフィックスが必要）
-git checkout -b claude/add-new-feature
+# 1. 新しい機能ブランチを作成（claude/ または ai/ プレフィックスが必要）
+git checkout -b ai/add-new-feature
 
 # 2. コードを編集してpush
 git add .
 git commit -m "Add new feature"
-git push -u origin claude/add-new-feature
+git push -u origin ai/add-new-feature
 
 # 3. CIが自動実行される
-# 4. もしテストが失敗したら、Claudeが自動的に修正Issueを作成
-# 5. Claudeが修正を実装してコミット
+# 4. もしテストが失敗したら、エージェントが自動的に修正Issueを作成
+# 5. エージェントが修正を実装してコミット
 # 6. CIが再実行され、修正が検証される
 ```
 
@@ -87,9 +115,10 @@ git push -u origin claude/add-new-feature
 
 ### 注意点
 
-- 自動修正機能は `claude/**` ブランチでのみ動作します
-- 複雑なエラーの場合、Claudeは修正方針を提示して人間のレビューを求めることがあります
-- `ANTHROPIC_API_KEY` が正しく設定されていることを確認してください
+- 自動修正機能は `claude/**` または `ai/**` ブランチでのみ動作します
+- 複雑なエラーの場合、エージェントは修正方針を提示して人間のレビューを求めることがあります
+- 使用するエージェントに対応する API Key が正しく設定されていることを確認してください
+- エージェントの選択は `.agent-config.yml` で設定できます
 
 ## 開発環境のセットアップ
 
