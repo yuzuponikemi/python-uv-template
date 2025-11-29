@@ -78,8 +78,35 @@ jobs:
 
           echo "Error context prepared."
 
-      - name: Create issue for auto-fix
+      - name: Check for existing auto-fix issue
+        id: check-existing
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'auto-fix',
+            });
+
+            const commitSha = context.payload.workflow_run.head_sha;
+            const branch = context.payload.workflow_run.head_branch;
+
+            // Check if there's already an open issue for this branch or commit
+            const existingIssue = issues.find(issue =>
+              issue.title.includes(branch) || issue.body.includes(commitSha)
+            );
+
+            if (existingIssue) {
+              console.log(`Found existing issue #${existingIssue.number}`);
+              return existingIssue.number;
+            }
+            return null;
+
+      - name: Create or update issue for auto-fix
         id: create-issue
+        if: steps.check-existing.outputs.result == 'null'
         uses: actions/github-script@v7
         with:
           script: |
@@ -107,6 +134,19 @@ jobs:
             });
 
             return issue.data.number;
+
+      - name: Comment on existing issue
+        if: steps.check-existing.outputs.result != 'null'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = ${{ steps.check-existing.outputs.result }};
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `CI still failing for commit ${context.payload.workflow_run.head_sha}\n\nWorkflow run: ${context.payload.workflow_run.html_url}\n\n⚠️ Please fix the issues to stop this workflow from re-running.`
+            });
 
       - name: Wait for Claude to process
         run: |
