@@ -18,16 +18,16 @@ Python研究用ソフトウェア開発のテンプレートリポジトリで�
 
 | エージェント | 特徴 | API Key |
 |------------|------|---------|
-| **Claude Code** (デフォルト) | TDD、研究ソフトウェア、GitHub統合 | `ANTHROPIC_API_KEY` |
-| **Gemini** | 高速、長コンテキスト、マルチモーダル | `GOOGLE_API_KEY` |
+| **Gemini** (デフォルト) | 高速、長コンテキスト、マルチモーダル、低コスト | `GOOGLE_API_KEY` |
+| **Claude Code** | TDD、研究ソフトウェア、GitHub統合 | `ANTHROPIC_API_KEY` |
 | **Codex/GPT** | 汎用性、関数呼び出し | `OPENAI_API_KEY` |
 | **SWE-agent** | 自律デバッグ、オープンソース | `OPENAI_API_KEY` |
 
 ### セットアップ
 
 1. このテンプレートから新しいリポジトリを作成
-2. `.agent-config.yml` で使用するエージェントを選択（デフォルトは Claude Code）
-3. リポジトリの Settings > Secrets and variables > Actions で必要な API Key を設定
+2. `.agent-config.yml` で使用するエージェントを選択（デフォルトは Gemini - コスト効率重視）
+3. リポジトリの Settings > Secrets and variables > Actions で必要な API Key を設定（デフォルトは `GOOGLE_API_KEY`）
 4. Issue や Pull Request で `@claude` または `@ai` とメンションして使用開始
 
 ### エージェントの選択
