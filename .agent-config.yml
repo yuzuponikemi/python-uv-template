@@ -3,7 +3,8 @@
 
 # Agent selection: claude_code, gemini, codex, swe_agent
 agent:
-  type: claude_code  # Default agent
+  type: gemini  # Default agent (cost-effective)
+  model: gemini-2.0-flash-exp  # Fast and affordable
 
   # Model configuration (optional, uses agent defaults if not specified)
   # model: claude-sonnet-4-5-20250929  # For Claude Code
