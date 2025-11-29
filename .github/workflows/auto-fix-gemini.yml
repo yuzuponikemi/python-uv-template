@@ -95,15 +95,15 @@ jobs:
               }
             }
 
-            const issue = await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `[Gemini Auto-fix] CI Failed on ${context.payload.workflow_run.head_branch}`,
-              body: `## CI Failure Report
+            const branch = context.payload.workflow_run.head_branch;
+            const commit = context.payload.workflow_run.head_sha;
+            const workflowUrl = context.payload.workflow_run.html_url;
 
-**Branch:** ${context.payload.workflow_run.head_branch}
-**Commit:** ${context.payload.workflow_run.head_sha}
-**Workflow Run:** ${context.payload.workflow_run.html_url}
+            const issueBody = `## CI Failure Report
+
+Branch: ${branch}
+Commit: ${commit}
+Workflow Run: ${workflowUrl}
 
 ${errorContext}
 
@@ -115,11 +115,17 @@ To manually trigger a fix, comment with:
 \`\`\`
 @ai Please fix the CI failures above
 \`\`\`
-              `,
+`;
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Gemini Auto-fix] CI Failed on ${branch}`,
+              body: issueBody,
               labels: ['auto-fix', 'gemini', 'ci-failure']
             });
 
-            console.log(\`Issue created: #\${issue.data.number}\`);
+            console.log(`Issue created: #${issue.data.number}`);
 
       - name: Comment on existing issue
         if: steps.check-existing.outputs.result != 'null'
