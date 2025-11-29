@@ -99,33 +99,27 @@ jobs:
             const commit = context.payload.workflow_run.head_sha;
             const workflowUrl = context.payload.workflow_run.html_url;
 
-            const issueBody = `## CI Failure Report
-
-Branch: ${branch}
-Commit: ${commit}
-Workflow Run: ${workflowUrl}
-
-${errorContext}
-
----
-
-Gemini analysis has been run. Please review the auto-fix suggestions and apply as needed.
-
-To manually trigger a fix, comment with:
-\`\`\`
-@ai Please fix the CI failures above
-\`\`\`
-`;
+            const issueBody = '## CI Failure Report\n\n' +
+              'Branch: ' + branch + '\n' +
+              'Commit: ' + commit + '\n' +
+              'Workflow Run: ' + workflowUrl + '\n\n' +
+              errorContext + '\n\n' +
+              '---\n\n' +
+              'Gemini analysis has been run. Please review the auto-fix suggestions and apply as needed.\n\n' +
+              'To manually trigger a fix, comment with:\n' +
+              '```\n' +
+              '@ai Please fix the CI failures above\n' +
+              '```\n';
 
             const issue = await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `[Gemini Auto-fix] CI Failed on ${branch}`,
+              title: '[Gemini Auto-fix] CI Failed on ' + branch,
               body: issueBody,
               labels: ['auto-fix', 'gemini', 'ci-failure']
             });
 
-            console.log(`Issue created: #${issue.data.number}`);
+            console.log('Issue created: #' + issue.data.number);
 
       - name: Comment on existing issue
         if: steps.check-existing.outputs.result != 'null'
@@ -133,9 +127,12 @@ To manually trigger a fix, comment with:
         with:
           script: |
             const issueNumber = ${{ steps.check-existing.outputs.result }};
+            const commitSha = context.payload.workflow_run.head_sha;
+            const workflowUrl = context.payload.workflow_run.html_url;
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issueNumber,
-              body: `⚠️ CI still failing for commit ${context.payload.workflow_run.head_sha}\n\nWorkflow run: ${context.payload.workflow_run.html_url}\n\nPlease fix the issues in the code to stop this workflow from re-running.`
+              body: '⚠️ CI still failing for commit ' + commitSha + '\n\nWorkflow run: ' + workflowUrl + '\n\nPlease fix the issues in the code to stop this workflow from re-running.'
             });
