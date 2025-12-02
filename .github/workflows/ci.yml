@@ -125,7 +125,7 @@ jobs:
 
       - name: Upload coverage report as artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-report
           path: |
@@ -135,7 +135,7 @@ jobs:
 
       - name: Upload test logs as artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-logs
           path: |
