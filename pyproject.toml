@@ -16,10 +16,14 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
+testpaths = ["tests", "benchmarks"]
+python_files = ["test_*.py", "benchmark_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "benchmark: mark test as a benchmark test (use with pytest-benchmark)",
+    "slow: mark test as slow (deselect with '-m \"not slow\"')",
+]
 addopts = [
     "-v",
     "--strict-markers",

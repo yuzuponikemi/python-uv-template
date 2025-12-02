@@ -12,6 +12,14 @@ jobs:
     permissions:
       contents: write  # Allow auto-commit of requirements.txt
 
+    # Note: By default, we test only Python 3.11 to save GitHub Actions minutes.
+    # To enable multi-version testing (3.9, 3.10, 3.11, 3.12), uncomment the strategy section
+    # and update references to ${{ matrix.python-version }} accordingly.
+    # strategy:
+    #   fail-fast: false
+    #   matrix:
+    #     python-version: ["3.9", "3.10", "3.11", "3.12"]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,11 +30,23 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
+          enable-cache: false  # We use actions/cache for more control
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.cache/pip
+          key: ${{ runner.os }}-uv-3.11-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-3.11-
+            ${{ runner.os }}-uv-
 
       - name: Compile requirements.txt
         run: |
@@ -54,6 +74,25 @@ jobs:
         run: |
           uv pip install --system -r requirements.txt
 
+      - name: Install dev dependencies
+        run: |
+          uv pip install --system -r requirements-dev.txt
+
+      - name: Cache pre-commit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-3.11-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-3.11-
+            pre-commit-${{ runner.os }}-
+
+      - name: Run pre-commit hooks
+        id: pre-commit
+        continue-on-error: true
+        run: |
+          pre-commit run --all-files --show-diff-on-failure 2>&1 | tee pre-commit.log
+
       - name: Run ruff linter
         id: ruff-check
         continue-on-error: true
@@ -72,11 +111,27 @@ jobs:
         run: |
           mypy --ignore-missing-imports 2>&1 | tee mypy.log
 
-      - name: Run pytest
+      - name: Run bandit security check
+        id: bandit
+        continue-on-error: true
+        run: |
+          bandit -r src -c pyproject.toml 2>&1 | tee bandit.log
+
+      - name: Run pytest with coverage
         id: pytest
         continue-on-error: true
         run: |
-          python -m pytest -v --tb=short --color=yes 2>&1 | tee pytest.log
+          pytest --cov=src --cov-report=xml --cov-report=term-missing --cov-report=html -v --tb=short --color=yes 2>&1 | tee pytest.log
+
+      - name: Upload coverage report as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            htmlcov/
+            coverage.xml
+          retention-days: 30
 
       - name: Upload test logs as artifacts
         if: always()
@@ -88,13 +143,17 @@ jobs:
             ruff-check.log
             ruff-format.log
             mypy.log
+            bandit.log
+            pre-commit.log
           retention-days: 7
 
       - name: Check if any step failed
         if: |
+          steps.pre-commit.outcome == 'failure' ||
           steps.ruff-check.outcome == 'failure' ||
           steps.ruff-format.outcome == 'failure' ||
           steps.mypy.outcome == 'failure' ||
+          steps.bandit.outcome == 'failure' ||
           steps.pytest.outcome == 'failure'
         run: |
           echo "::error::CI checks failed. Check the logs above for details."

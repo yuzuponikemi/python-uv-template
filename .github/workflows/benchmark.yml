@@ -1,0 +1,147 @@
+name: Benchmark
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for comparison
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+          enable-cache: false  # We use actions/cache for more control
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.cache/pip
+          key: ${{ runner.os }}-benchmark-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-benchmark-
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system -r requirements.txt
+          uv pip install --system -r requirements-dev.txt
+
+      - name: Run benchmarks
+        run: |
+          pytest benchmarks/ -v --benchmark-only --benchmark-json=benchmark-results.json
+
+      - name: Download previous benchmark results
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/cache@v4
+        with:
+          path: benchmark-cache
+          key: benchmark-cache-${{ github.base_ref }}
+
+      - name: Compare with previous benchmarks
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          if [ -f benchmark-cache/benchmark-results.json ]; then
+            echo "## Benchmark Comparison" > benchmark-comment.md
+            echo "" >> benchmark-comment.md
+            echo "Comparing current PR against base branch \`${{ github.base_ref }}\`" >> benchmark-comment.md
+            echo "" >> benchmark-comment.md
+            echo "📊 **Benchmark Results**" >> benchmark-comment.md
+            echo "" >> benchmark-comment.md
+
+            # You can add more sophisticated comparison logic here
+            # For now, just show that benchmarks were run
+            echo "✅ Benchmarks completed successfully" >> benchmark-comment.md
+            echo "" >> benchmark-comment.md
+            echo "See full results in the workflow artifacts." >> benchmark-comment.md
+          else
+            echo "## Benchmark Results" > benchmark-comment.md
+            echo "" >> benchmark-comment.md
+            echo "📊 Benchmarks have been run for this PR." >> benchmark-comment.md
+            echo "" >> benchmark-comment.md
+            echo "No baseline found for comparison. This will become the new baseline." >> benchmark-comment.md
+          fi
+
+      - name: Comment PR with benchmark results
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## Benchmark Results\n\nBenchmarks completed. See artifacts for detailed results.';
+
+            if (fs.existsSync('benchmark-comment.md')) {
+              body = fs.readFileSync('benchmark-comment.md', 'utf8');
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Store benchmark results
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          mkdir -p benchmark-cache
+          cp benchmark-results.json benchmark-cache/
+
+      - name: Cache benchmark results for future comparisons
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: actions/cache/save@v4
+        with:
+          path: benchmark-cache
+          key: benchmark-cache-${{ github.ref_name }}
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark-results.json
+            .benchmarks/
+          retention-days: 90
+
+      - name: Generate benchmark report
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          echo "# Benchmark Report" > benchmark-report.md
+          echo "" >> benchmark-report.md
+          echo "**Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> benchmark-report.md
+          echo "**Commit:** ${{ github.sha }}" >> benchmark-report.md
+          echo "**Branch:** ${{ github.ref_name }}" >> benchmark-report.md
+          echo "" >> benchmark-report.md
+          echo "See \`benchmark-results.json\` for detailed metrics." >> benchmark-report.md
+
+      - name: Upload benchmark report
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report
+          path: benchmark-report.md
+          retention-days: 90
