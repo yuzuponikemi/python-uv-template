@@ -8,14 +8,17 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     permissions:
       contents: write  # Allow auto-commit of requirements.txt
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    # Note: By default, we test only Python 3.11 to save GitHub Actions minutes.
+    # To enable multi-version testing (3.9, 3.10, 3.11, 3.12), uncomment the strategy section
+    # and update references to ${{ matrix.python-version }} accordingly.
+    # strategy:
+    #   fail-fast: false
+    #   matrix:
+    #     python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
       - name: Checkout repository
@@ -29,10 +32,10 @@ jobs:
           version: "latest"
           enable-cache: true
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
           cache: 'pip'
 
       - name: Cache uv dependencies
@@ -41,9 +44,9 @@ jobs:
           path: |
             ~/.cache/uv
             ~/.cache/pip
-          key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+          key: ${{ runner.os }}-uv-3.11-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
           restore-keys: |
-            ${{ runner.os }}-uv-${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-3.11-
             ${{ runner.os }}-uv-
 
       - name: Compile requirements.txt
@@ -60,8 +63,7 @@ jobs:
           fi
 
       - name: Commit updated requirements.txt
-        # Only commit from Python 3.11 job to avoid conflicts
-        if: steps.check-requirements.outputs.changed == 'true' && matrix.python-version == '3.11'
+        if: steps.check-requirements.outputs.changed == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -81,9 +83,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          key: pre-commit-${{ runner.os }}-3.11-${{ hashFiles('.pre-commit-config.yaml') }}
           restore-keys: |
-            pre-commit-${{ runner.os }}-${{ matrix.python-version }}-
+            pre-commit-${{ runner.os }}-3.11-
             pre-commit-${{ runner.os }}-
 
       - name: Run pre-commit hooks
@@ -122,28 +124,21 @@ jobs:
         run: |
           pytest --cov=src --cov-report=xml --cov-report=term-missing --cov-report=html -v --tb=short --color=yes 2>&1 | tee pytest.log
 
-      - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.11'
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
-          verbose: true
-          token: ${{ secrets.CODECOV_TOKEN }}
-
       - name: Upload coverage report as artifact
-        if: always() && matrix.python-version == '3.11'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: htmlcov/
+          path: |
+            htmlcov/
+            coverage.xml
           retention-days: 30
 
       - name: Upload test logs as artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-logs-py${{ matrix.python-version }}
+          name: test-logs
           path: |
             pytest.log
             ruff-check.log

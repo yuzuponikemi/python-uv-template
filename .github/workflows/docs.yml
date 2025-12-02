@@ -7,15 +7,19 @@ on:
     branches: [main, master]
   workflow_dispatch:  # Allow manual trigger
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Note: GitHub Pages deployment is disabled by default for private repositories.
+# Private repos require GitHub Pro or higher to use GitHub Pages.
+# For public repos, uncomment the permissions, concurrency, and deploy job below.
 
-# Allow only one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+# permissions:
+#   contents: read
+#   pages: write
+#   id-token: write
+
+# # Allow only one concurrent deployment
+# concurrency:
+#   group: "pages"
+#   cancel-in-progress: false
 
 jobs:
   build:
@@ -66,24 +70,28 @@ jobs:
           path: docs/_build/html/
           retention-days: 30
 
-      - name: Setup Pages
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-        uses: actions/configure-pages@v5
+      # GitHub Pages deployment (disabled by default for private repos)
+      # Uncomment the steps below for public repositories or GitHub Pro+ private repos
+      # - name: Setup Pages
+      #   if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      #   uses: actions/configure-pages@v5
 
-      - name: Upload to GitHub Pages
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/_build/html/
+      # - name: Upload to GitHub Pages
+      #   if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      #   uses: actions/upload-pages-artifact@v3
+      #   with:
+      #     path: docs/_build/html/
 
-  deploy:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+  # GitHub Pages deployment job (disabled by default)
+  # Uncomment this entire job for public repos or GitHub Pro+ private repos
+  # deploy:
+  #   if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
+  #   steps:
+  #     - name: Deploy to GitHub Pages
+  #       id: deployment
+  #       uses: actions/deploy-pages@v4
