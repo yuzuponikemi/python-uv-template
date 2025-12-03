@@ -2,93 +2,174 @@
 
 This document outlines the strict, mandatory guidelines for managing Python projects. The **sole and exclusive tool** for all virtual environment and package management tasks is **uv**.
 
-The primary workflow is based on defining direct dependencies in a requirements.in file and generating a locked requirements.txt file for reproducible installs.
+This project uses **uv's native project management features** for superior dependency management, leveraging `pyproject.toml` and `uv.lock` for reproducible, fast, and reliable builds.
 
 ### **Golden Rule: uv is the Only Tool**
 
-For any task involving Python virtual environments or packages, you **MUST** use the uv command-line tool. You **MUST NOT** use python \-m venv, pip, or any other package manager unless explicitly instructed for a specific, exceptional reason.
+For any task involving Python virtual environments or packages, you **MUST** use the uv command-line tool. You **MUST NOT** use `python -m venv`, `pip`, or any other package manager unless explicitly instructed for a specific, exceptional reason.
 
-## **The Core Workflow: Intent \-\> Lock \-\> Sync**
+## **The Core Workflow: Native uv Project Management**
 
-This three-step process is the standard for all projects.
+This workflow leverages uv's built-in project management capabilities for maximum performance and reproducibility.
 
-### **Step 1: Define Direct Dependencies in requirements.in**
+### **Step 1: Define Dependencies in pyproject.toml**
 
-The project's direct, top-level dependencies **MUST** be declared in a file named requirements.in. This file is for human authors to declare the project's *intent*. Version specifiers can be flexible.
+The project's dependencies **MUST** be declared in `pyproject.toml`. This is the single source of truth for all dependencies.
 
-**✅ Example requirements.in:**
+**✅ Example pyproject.toml:**
 
-\# This file lists the packages my project \*directly\* depends on.  
-pandas  
-fastapi\>=0.100  
-httpx\[http2\]
+```toml
+[project]
+name = "my-project"
+version = "0.1.0"
+dependencies = [
+    "pandas>=2.0.0",
+    "fastapi>=0.100.0",
+    "httpx[http2]>=0.24.0",
+]
 
-### **Step 2: Generate a Lockfile with uv pip compile**
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.3.0",
+    "mypy>=1.8.0",
+]
+```
 
-After modifying requirements.in, you **MUST** generate a complete and pinned lockfile named requirements.txt. This file is machine-generated and ensures deterministic, reproducible builds.
+### **Step 2: Generate Lockfile with uv lock**
+
+After modifying `pyproject.toml`, you **MUST** update the lockfile `uv.lock`. This file ensures deterministic, reproducible builds with cryptographic hash verification.
 
 **✅ DO THIS:**
 
-uv pip compile requirements.in \-o requirements.txt
+```bash
+uv lock
+```
 
-The resulting requirements.txt will contain every direct and transitive dependency with a pinned version and hash. It **MUST NOT** be edited by hand.
+The resulting `uv.lock` will contain every direct and transitive dependency with exact versions and hashes. It **MUST NOT** be edited by hand.
 
-### **Step 3: Install from the Lockfile with uv pip sync**
+### **Step 3: Sync Environment with uv sync**
 
-To install dependencies into a virtual environment, you **MUST** use uv pip sync with the generated requirements.txt lockfile. This command ensures the environment is an *exact mirror* of the lockfile.
+To install dependencies into a virtual environment, you **MUST** use `uv sync`. This command:
+- Creates or updates the virtual environment automatically
+- Installs exactly what's in `uv.lock`
+- Removes any packages not in the lockfile (prevents drift)
+- Runs in parallel for 10-100x faster installs than pip
 
 **✅ DO THIS:**
 
-uv pip sync requirements.txt
+```bash
+# Sync with all optional dependencies
+uv sync --all-extras
 
-This is superior to install \-r because it also removes any packages that are not in the lockfile, preventing environment drift.
+# Or sync with specific optional dependencies
+uv sync --extra dev
+```
 
 ## **Common Operations**
 
 ### **Initial Project Setup (for a new collaborator)**
 
-1. Clone the repository.  
-2. Create the virtual environment with uv.  
-   uv venv
+1. Clone the repository.
+2. Sync dependencies from the lockfile (uv handles venv creation automatically):
+   ```bash
+   uv sync --all-extras
+   ```
 
-3. Activate the environment.  
-   source .venv/bin/activate  
-   \# On Windows: .venv\\Scripts\\activate
-
-4. Install the exact dependencies from the lockfile.  
-   uv pip sync requirements.txt
+That's it! uv creates the virtual environment and installs all dependencies in one command.
 
 ### **Adding a New Package**
 
-1. Manually add the new package name (e.g., polars) to the requirements.in file.  
-2. Re-compile the lockfile.  
-   uv pip compile requirements.in \-o requirements.txt
+1. Edit `pyproject.toml` to add the new package:
+   ```toml
+   [project]
+   dependencies = [
+       "pandas>=2.0.0",
+       "polars>=0.20.0",  # New package
+   ]
+   ```
 
-3. Sync the environment with the new lockfile.  
-   uv pip sync requirements.txt
+2. Update the lockfile:
+   ```bash
+   uv lock
+   ```
+
+3. Sync the environment:
+   ```bash
+   uv sync --all-extras
+   ```
 
 ### **Updating All Packages**
 
-1. To update all packages to their latest allowed versions (according to requirements.in), use the \--upgrade flag during compilation.  
-   uv pip compile requirements.in \-o requirements.txt \--upgrade
+1. Update all packages to their latest allowed versions:
+   ```bash
+   uv lock --upgrade
+   ```
 
-2. Sync the environment with the updated lockfile.  
-   uv pip sync requirements.txt
+2. Sync the environment:
+   ```bash
+   uv sync --all-extras
+   ```
+
+### **Running Scripts**
+
+Use `uv run` to execute Python scripts in the project environment:
+
+```bash
+# Run a Python script
+uv run python scripts/process_data.py
+
+# Run pytest
+uv run pytest
+
+# Run any command in the project environment
+uv run mypy src/
+```
+
+**Benefits of uv run:**
+- No need to manually activate virtual environment
+- Automatically uses the correct environment
+- Works across all platforms
 
 ## **Version Control (GitHub) Policy**
 
-You **MUST** commit both of the following files to the Git repository:
+You **MUST** commit the following files to the Git repository:
 
-1. **requirements.in**: This tracks the high-level project dependencies that developers manage directly.  
-2. **requirements.txt**: This is the generated lockfile that ensures reproducible builds for all collaborators and for CI/CD pipelines.
+1. **pyproject.toml**: This tracks all project metadata and dependencies.
+2. **uv.lock**: This is the generated lockfile that ensures reproducible builds for all collaborators and CI/CD pipelines.
+3. **.python-version**: Specifies the Python version for the project.
 
-The .venv directory **MUST** be added to the .gitignore file.
+The `.venv` directory **MUST** be added to the `.gitignore` file.
 
 ### **❌ Forbidden Commands ❌**
 
 Under this workflow, you **MUST NEVER** use the following commands:
 
-* pip install ...  
-* pip freeze ...  
-* python \-m venv ...  
-* Manually editing requirements.txt.
+* `pip install ...`
+* `pip freeze ...`
+* `python -m venv ...`
+* `uv pip install ...` (use `uv sync` instead)
+* Manually editing `uv.lock` or `requirements.txt`
+
+## **Benefits of uv Native Project Management**
+
+1. **10-100x Faster**: Parallel downloads and installs
+2. **Cryptographic Verification**: Hash-based integrity checks
+3. **Automatic Cleanup**: Removes stale packages automatically
+4. **Built-in Caching**: Optimized caching in CI/CD
+5. **No Manual venv Management**: uv handles it automatically
+6. **Single Source of Truth**: All configuration in `pyproject.toml`
+7. **Better Reproducibility**: Exact versions and hashes in `uv.lock`
+
+## **Makefile Commands**
+
+This project provides convenient Make targets:
+
+```bash
+make sync     # Sync dependencies from uv.lock
+make lock     # Update uv.lock file
+make test     # Run tests
+make lint     # Run linter
+make format   # Format code
+make ci       # Run all CI checks locally
+```

@@ -126,31 +126,41 @@ make ci
 
 ## 依存関係の管理
 
-このプロジェクトは **uv** による依存関係の固定管理を採用しています。
+このプロジェクトは **uv** のネイティブプロジェクト管理機能を採用しています。
 
 ### ファイルの役割
 
-- **`requirements.in`**: 人間が編集するトップレベルの依存関係
-- **`requirements.txt`**: uvが自動生成する完全な依存関係リスト（全バージョン固定）
+- **`pyproject.toml`**: プロジェクトのメタデータと依存関係の定義
+- **`uv.lock`**: uvが自動生成する完全な依存関係ロックファイル（全パッケージの正確なバージョンとハッシュ値）
+- **`.python-version`**: プロジェクトで使用するPythonバージョン
 
 ### 依存関係を追加する場合
 
-1. `requirements.in` を編集して依存関係を追加
-2. `make compile` を実行して `requirements.txt` を更新
-3. 変更をコミット（両方のファイルをコミット）
+1. `pyproject.toml` の `dependencies` または `[project.optional-dependencies]` セクションを編集
+2. `make lock` を実行して `uv.lock` を更新
+3. `make sync` でローカル環境に反映
+4. 変更をコミット（`pyproject.toml` と `uv.lock` の両方）
 
 ```bash
-# requirements.in に新しいパッケージを追加
-echo "scikit-learn>=1.3.0" >> requirements.in
+# pyproject.toml に新しいパッケージを追加
+# dependencies = [
+#     ...
+#     "scikit-learn>=1.3.0",
+# ]
 
-# requirements.txt を更新
-make compile
+# uv.lock を更新
+make lock
 
-# インストール
-make install
+# ローカル環境に同期
+make sync
 ```
 
-**注意**: CIが自動的に `requirements.txt` を最新化してコミットします。
+### uvの恩恵
+
+- **高速インストール**: `uv sync` は依存関係を並列ダウンロード・インストール（pipより10-100倍高速）
+- **正確な再現性**: `uv.lock` がすべてのパッケージのハッシュ値を含むため、完全に同一の環境を再現
+- **自動クリーンアップ**: `uv sync` は不要になったパッケージを自動削除
+- **ビルトインキャッシュ**: CI/CDで自動的に最適化されたキャッシュを使用
 
 ## CI/CDパイプライン
 

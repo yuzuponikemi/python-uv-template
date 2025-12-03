@@ -65,33 +65,39 @@ pre-commit install
 
 #### 依存関係の管理
 
-このプロジェクトは **再現性を重視** して依存関係を管理しています。
+このプロジェクトは **uvのネイティブプロジェクト管理機能** で依存関係を管理しています。
 
 **ファイルの役割:**
-- `requirements.in`: 人間が編集するトップレベルの依存関係（最小バージョンのみ指定）
-- `requirements.txt`: uvが自動生成する完全な依存関係リスト（全バージョン厳密に固定）
+- `pyproject.toml`: プロジェクトのメタデータと依存関係の定義
+- `uv.lock`: uvが自動生成する完全な依存関係ロックファイル（全パッケージのハッシュ値を含む）
+- `.python-version`: プロジェクトで使用するPythonバージョン
 
 **新しい依存関係を追加する手順:**
 
 ```bash
-# 1. requirements.in を編集
-echo "scikit-learn>=1.3.0" >> requirements.in
+# 1. pyproject.toml を編集
+# [project]
+# dependencies = [
+#     ...
+#     "scikit-learn>=1.3.0",
+# ]
 
-# 2. requirements.txt を更新
-make compile
+# 2. uv.lock を更新
+make lock
 
-# 3. インストール
-make install
+# 3. ローカル環境に同期
+make sync
 
 # 4. 両方のファイルをコミット
-git add requirements.in requirements.txt
+git add pyproject.toml uv.lock
 git commit -m "Add scikit-learn dependency"
 ```
 
-**注意:**
-- CIが自動的に `requirements.txt` を最新化してコミットします
-- `requirements.in` だけを変更してpushすれば、CIが自動でcompileします
-- 完全な再現性のため、必ず両方のファイルをコミットしてください
+**利点:**
+- `uv sync` による高速な依存関係インストール（pipより10-100倍高速）
+- `uv.lock` による完全な再現性（ハッシュ値検証）
+- 不要なパッケージの自動削除
+- CI/CDでのビルトインキャッシュによる最適化
 
 #### 開発ワークフロー（TDD）
 

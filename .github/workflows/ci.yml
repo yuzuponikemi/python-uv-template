@@ -30,53 +30,16 @@ jobs:
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-          enable-cache: false  # We use actions/cache for more control
+          enable-cache: true  # Use uv's built-in caching
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/uv
-            ~/.cache/pip
-          key: ${{ runner.os }}-uv-3.11-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-3.11-
-            ${{ runner.os }}-uv-
-
-      - name: Compile requirements.txt
+      - name: Sync dependencies
         run: |
-          uv pip compile requirements.in -o requirements.txt
-
-      - name: Check for requirements.txt changes
-        id: check-requirements
-        run: |
-          if git diff --quiet requirements.txt; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Commit updated requirements.txt
-        if: steps.check-requirements.outputs.changed == 'true'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add requirements.txt
-          git commit -m "Auto-update requirements.txt from requirements.in"
-          git push
-
-      - name: Install dependencies
-        run: |
-          uv pip install --system -r requirements.txt
-
-      - name: Install dev dependencies
-        run: |
-          uv pip install --system -r requirements-dev.txt
+          uv sync --all-extras
 
       - name: Cache pre-commit
         uses: actions/cache@v4

@@ -3,8 +3,9 @@
 # Default target: show help
 help:
 	@echo "Available commands:"
-	@echo "  make compile        Compile requirements.txt from requirements.in"
-	@echo "  make install        Install all dependencies"
+	@echo "  make lock           Update uv.lock file"
+	@echo "  make sync           Sync dependencies from uv.lock"
+	@echo "  make install        Install all dependencies (alias for sync)"
 	@echo "  make test           Run all tests"
 	@echo "  make test-fast      Run tests (skip slow tests)"
 	@echo "  make test-cov       Run tests with coverage report"
@@ -18,15 +19,18 @@ help:
 	@echo "  make ci             Run all CI checks locally"
 	@echo "  make all            Run format, lint, type-check, and test"
 
-# Compile requirements.txt from requirements.in
-compile:
-	uv pip compile requirements.in -o requirements.txt
-	@echo "✓ requirements.txt updated"
+# Update lockfile
+lock:
+	uv lock
+	@echo "✓ uv.lock updated"
 
-# Install dependencies
-install:
-	uv pip install --system -r requirements.txt
-	uv pip install --system -r requirements-dev.txt
+# Sync dependencies from lockfile (installs exactly what's in uv.lock)
+sync:
+	uv sync --all-extras
+	@echo "✓ Dependencies synced from uv.lock"
+
+# Install dependencies (alias for sync)
+install: sync
 
 # Run all tests
 test:
