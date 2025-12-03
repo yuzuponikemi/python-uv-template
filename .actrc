@@ -1,0 +1,32 @@
+# act (GitHub Actions local runner) configuration file
+# See: https://github.com/nektos/act
+
+# Use GitHub's official runner images for better compatibility
+# Options: micro (node:16-buster-slim), medium (catthehacker/ubuntu:act-latest), large (catthehacker/ubuntu:full-latest)
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+
+# Use secrets file
+--secret-file .secrets
+
+# Use environment variables file (if exists)
+--env-file .github/workflows/.env.local
+
+# Enable verbose output for debugging
+# Uncomment the line below for detailed logs
+# --verbose
+
+# Container architecture (use host architecture by default)
+--container-architecture linux/amd64
+
+# Use .gitignore for .act directory
+--use-gitignore
+
+# Reuse container for performance (optional)
+# Uncomment to speed up repeated runs
+# --reuse
+
+# Bind working directory to container (improves performance)
+--bind
+
+# Artifact server port (for testing artifact uploads)
+--artifact-server-path /tmp/act-artifacts

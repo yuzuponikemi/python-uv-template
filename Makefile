@@ -1,4 +1,4 @@
-.PHONY: help compile install test lint format type-check clean docs benchmark all ci
+.PHONY: help compile install test lint format type-check clean docs benchmark all ci ci-local act-setup
 
 # Default target: show help
 help:
@@ -16,6 +16,8 @@ help:
 	@echo "  make docs-serve     Serve documentation locally"
 	@echo "  make benchmark      Run performance benchmarks"
 	@echo "  make ci             Run all CI checks locally"
+	@echo "  make ci-local       Run GitHub Actions CI locally with act"
+	@echo "  make act-setup      Setup act configuration files"
 	@echo "  make all            Run format, lint, type-check, and test"
 
 # Compile requirements.txt from requirements.in
@@ -88,3 +90,47 @@ ci: format lint type-check test
 # Run all checks
 all: format lint type-check test
 	@echo "✓ All checks completed!"
+
+# Setup act configuration files
+act-setup:
+	@echo "Setting up act configuration..."
+	@if [ ! -f .secrets ]; then \
+		cp .secrets.example .secrets; \
+		echo "✓ Created .secrets file (please edit with your actual secrets)"; \
+	else \
+		echo "✓ .secrets file already exists"; \
+	fi
+	@if [ ! -f .github/workflows/.env.local ]; then \
+		cp .github/workflows/.env.local.example .github/workflows/.env.local; \
+		echo "✓ Created .env.local file"; \
+	else \
+		echo "✓ .env.local file already exists"; \
+	fi
+	@echo "✓ Act setup complete! See LOCAL_TESTING.md for usage instructions"
+
+# Run GitHub Actions CI locally with act
+ci-local:
+	@echo "Running GitHub Actions CI locally with act..."
+	@if ! command -v act > /dev/null 2>&1; then \
+		echo "Error: act is not installed. Please install it first:"; \
+		echo "  macOS: brew install act"; \
+		echo "  Linux: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash"; \
+		echo "  See LOCAL_TESTING.md for more details"; \
+		exit 1; \
+	fi
+	@if ! command -v docker > /dev/null 2>&1; then \
+		echo "Error: Docker is not installed or not running."; \
+		echo "Please install and start Docker first."; \
+		exit 1; \
+	fi
+	@if ! docker ps > /dev/null 2>&1; then \
+		echo "Error: Docker daemon is not running."; \
+		echo "Please start Docker first."; \
+		exit 1; \
+	fi
+	@if [ ! -f .secrets ]; then \
+		echo "Warning: .secrets file not found. Running act-setup..."; \
+		$(MAKE) act-setup; \
+	fi
+	act push -j test
+	@echo "✓ Local CI completed!"
