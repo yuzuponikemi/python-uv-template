@@ -124,6 +124,44 @@ make format
 make ci
 ```
 
+## ローカルでのCIテスト（act）
+
+このプロジェクトは`act`を使用してGitHub Actionsワークフローをローカルで実行できます。
+
+### セットアップ
+
+```bash
+# 1. actとDockerをインストール（macOS）
+brew install act docker
+
+# 2. act設定ファイルをセットアップ
+make act-setup
+
+# 3. .secretsファイルを編集（必要に応じて）
+nano .secrets
+```
+
+### 使い方
+
+```bash
+# ローカルでCIを実行（GitHub Actionsと同じ環境）
+make ci-local
+
+# または直接actコマンドを使用
+act push -j test
+
+# 詳細ログ付きで実行
+act -v
+```
+
+**メリット**:
+- プッシュ前にローカルでCIをテスト
+- 高速な開発サイクル
+- GitHub Actionsの実行時間を節約
+- オフラインでのテストが可能
+
+詳細は[LOCAL_TESTING.md](LOCAL_TESTING.md)を参照してください。
+
 ## 依存関係の管理
 
 このプロジェクトは **uv** による依存関係の固定管理を採用しています。
