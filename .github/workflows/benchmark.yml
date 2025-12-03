@@ -37,7 +37,7 @@ jobs:
 
       - name: Run benchmarks
         run: |
-          pytest benchmarks/ -v --benchmark-only --benchmark-json=benchmark-results.json
+          uv run pytest benchmarks/ -v --benchmark-only --benchmark-json=benchmark-results.json
 
       - name: Download previous benchmark results
         if: github.event_name == 'pull_request'

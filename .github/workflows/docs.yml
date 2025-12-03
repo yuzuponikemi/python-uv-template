@@ -46,7 +46,7 @@ jobs:
       - name: Build documentation
         run: |
           cd docs
-          make html
+          uv run make html
           # Create .nojekyll file to bypass Jekyll processing
           touch _build/html/.nojekyll
 
