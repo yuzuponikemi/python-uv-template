@@ -1,10 +1,18 @@
 name: CI
 
+# This workflow can be tested locally using act:
+#   act push                          # Test push event
+#   act pull_request                  # Test pull request event
+#   act workflow_dispatch             # Test manual trigger
+#   act -j test                       # Run specific job
+#   act --container-architecture linux/amd64  # For Apple Silicon Macs
+
 on:
   push:
     branches: [main, master, develop, "claude/**"]
   pull_request:
     branches: [main, master, develop]
+  workflow_dispatch:  # Allow manual trigger for act local testing
 
 jobs:
   test:

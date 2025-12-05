@@ -1,5 +1,12 @@
 name: Claude Code
 
+# This workflow integrates Claude AI for automated issue and PR handling
+# Note: This workflow has limited local testing support with act because:
+#   - It depends on GitHub webhook events (issue_comment, etc.)
+#   - It requires ANTHROPIC_API_KEY secret
+#   - The claude-code-action requires GitHub API access
+# For local development, test the CI workflow instead which is what Claude will fix
+
 on:
   issue_comment:
     types: [created]
