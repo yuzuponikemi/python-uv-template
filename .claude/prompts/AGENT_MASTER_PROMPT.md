@@ -119,6 +119,50 @@
    git push -u origin claude/feature-name
    ```
 
+### Pull Request作成フロー（厳格版）
+
+**重要**: Pull Requestを作成する際は、必ず以下の品質チェックを経てから作成してください。
+
+#### gh pr-strict エイリアスの使用
+
+このリポジトリでは、`gh pr-strict` カスタムエイリアスを推奨します。これは以下のチェックを自動で実行します：
+
+1. `ruff format .` - コード整形
+2. `ruff check --fix .` - Lint修正
+3. `mypy .` - 型チェック
+4. `act push -q` - ローカルでのGitHub Actions実行
+5. すべて成功した場合のみ `gh pr create` を実行
+
+#### PR作成時のルール
+
+- **通常の `gh pr create` は使用しない**: 単純に `gh pr create` を実行するのではなく、必ず品質チェックを経ること
+- **AIエージェントへの指示**: ユーザーから「PRを作って」と依頼された際は：
+  1. まず `ruff`, `mypy`, `act` が通る状態かを確認
+  2. 必要に応じてコードを修正
+  3. 最終的に `gh pr-strict` コマンドの使用を推奨または実行
+- **コード修正の前提**: すべてのコード修正は、これらのLinterやCIが通ることを前提とする
+
+#### 手動でのPR作成フロー（gh pr-strictが使えない場合）
+
+```bash
+# 1. コード整形
+ruff format .
+
+# 2. Lint修正
+ruff check --fix .
+
+# 3. 型チェック
+mypy .
+
+# 4. ローカルCI実行
+act push -q
+
+# 5. すべて成功したらPR作成
+gh pr create --title "タイトル" --body "説明"
+```
+
+エイリアスの設定方法は `docs/GH_PR_STRICT_SETUP.md` を参照してください。
+
 ### よく使うコマンド
 
 ```bash
