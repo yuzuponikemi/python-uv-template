@@ -70,13 +70,35 @@ gh pr-strict
 ```
 .
 ├── AGENTMASTER.md                          # このファイル（簡易版）
-├── .claude/prompts/AGENT_MASTER_PROMPT.md  # 詳細なマスタープロンプト
+├── .claude/
+│   ├── hooks/
+│   │   └── sessionStart.sh                 # セッション開始時の自動読み込み
+│   ├── prompts/AGENT_MASTER_PROMPT.md      # 詳細なマスタープロンプト
+│   └── settings.json                       # Claude Code設定
 ├── .github/copilot-instructions.md         # GitHub Copilot固有の設定
-├── docs/GH_PR_STRICT_SETUP.md              # gh pr-strict エイリアス設定方法
+├── docs/
+│   ├── GH_PR_STRICT_SETUP.md               # gh pr-strict エイリアス設定
+│   └── HOOKS.md                            # フック設定ガイド
 ├── LOCAL_TESTING.md                        # ローカルテストガイド
 ├── ARCHITECTURE.md                         # プロジェクト構造
 └── CONTRIBUTING.md                         # 貢献ガイド
 ```
+
+## 🔄 自動読み込み（SessionStartフック）
+
+**このファイルは自動的に読み込まれます！**
+
+`.claude/hooks/sessionStart.sh` により、Claudeのセッション開始時にこのAGENTMASTER.mdが自動的に読み込まれます。
+
+つまり、**毎回「AGENTMASTER.mdを読んで」と指示する必要はありません**。Claudeは常にこのルールを認識した状態で作業を開始します。
+
+### フックの仕組み
+
+- **トリガー**: Claude Codeセッション開始時
+- **動作**: AGENTMASTER.mdの内容をClaudeのコンテキストに追加
+- **効果**: PR作成ルール、開発フロー、品質チェックを常に認識
+
+詳細は [`docs/HOOKS.md`](docs/HOOKS.md) を参照してください。
 
 ## ⚡ よく使うコマンド
 
