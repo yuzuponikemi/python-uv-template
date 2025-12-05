@@ -25,6 +25,15 @@
    - [ ] リンターチェックが通る
    - [ ] ローカルCIが通る
 
+4. **Pull Request作成（重要！）**
+   - **通常の `gh pr create` は使用しない**
+   - 必ず `gh pr-strict` エイリアスを使用
+   - または手動で以下を実行：
+     ```bash
+     ruff format . && ruff check --fix . && mypy . && act push -q && gh pr create
+     ```
+   - 詳細は `.claude/prompts/AGENT_MASTER_PROMPT.md` の「Pull Request作成フロー（厳格版）」を参照
+
 ### コード生成時のルール
 
 - **型ヒント**: すべての関数に型ヒントを追加
