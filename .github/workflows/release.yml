@@ -1,9 +1,22 @@
 name: Release
 
+# This workflow can be tested locally using act:
+#   act push -e tests/fixtures/release-event.json  # Test with mock tag push
+#   act workflow_dispatch                          # Test manual trigger
+#   act -j build-and-release                       # Run specific job
+# Note: GitHub Release creation and PyPI publishing will be skipped in act (local) mode
+# To test locally, you can manually trigger with workflow_dispatch
+
 on:
   push:
     tags:
       - 'v*.*.*'  # Trigger on version tags like v1.0.0, v2.1.3, etc.
+  workflow_dispatch:  # Allow manual trigger for act local testing
+    inputs:
+      tag:
+        description: 'Tag version to simulate (e.g., v1.0.0)'
+        required: false
+        default: 'v0.0.0-test'
 
 permissions:
   contents: write
@@ -44,9 +57,18 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # For manual dispatch, use the input tag
+            TAG="${{ github.event.inputs.tag }}"
+            VERSION=${TAG#v}
+          else
+            # For tag push events, extract from GITHUB_REF
+            VERSION=${GITHUB_REF#refs/tags/v}
+            TAG=${GITHUB_REF#refs/tags/}
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION, tag: $TAG"
 
       - name: Generate changelog
         id: changelog
@@ -70,6 +92,7 @@ jobs:
           echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${{ steps.version.outputs.tag }}" >> changelog.md
 
       - name: Create GitHub Release
+        if: ${{ !env.ACT }}
         uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ steps.version.outputs.tag }}
@@ -82,10 +105,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Display local build results
+        if: ${{ env.ACT }}
+        run: |
+          echo "=== Running in act (local) mode ==="
+          echo "GitHub Release creation skipped in local mode"
+          echo ""
+          echo "Build artifacts created:"
+          ls -lh dist/
+          echo ""
+          echo "Changelog preview:"
+          cat changelog.md
+          echo ""
+          echo "Version: ${{ steps.version.outputs.version }}"
+          echo "Tag: ${{ steps.version.outputs.tag }}"
+
       - name: Publish to PyPI (optional)
         # Uncomment the following lines if you want to publish to PyPI
         # You'll need to set PYPI_API_TOKEN in your repository secrets
-        if: false  # Change to true when ready to publish to PyPI
+        if: false  # Change to true when ready to publish to PyPI (and !env.ACT for local testing)
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}

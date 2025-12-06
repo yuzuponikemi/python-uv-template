@@ -1,15 +1,28 @@
 name: Auto-fix with Claude
 
+# This workflow is triggered by CI workflow failures on claude/** branches
+# For local testing with act:
+#   act workflow_dispatch             # Test manual trigger
+#   act -j auto-fix                   # Run specific job
+# Note: workflow_run events are not supported by act, so use workflow_dispatch for testing
+# Note: Issue creation and artifact downloads will be skipped in act (local) mode
+
 on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
     branches: ["claude/**"]
+  workflow_dispatch:  # Allow manual trigger for act local testing
+    inputs:
+      simulate_failure:
+        description: 'Simulate CI failure for testing'
+        required: false
+        default: 'false'
 
 jobs:
   auto-fix:
-    # Only run if CI workflow failed
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    # Only run if CI workflow failed or manual trigger with simulate_failure
+    if: ${{ github.event.workflow_run.conclusion == 'failure' || (github.event_name == 'workflow_dispatch' && github.event.inputs.simulate_failure == 'true') || env.ACT }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -27,6 +40,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download test logs
+        if: ${{ !env.ACT && github.event_name == 'workflow_run' }}
         uses: actions/download-artifact@v4
         with:
           name: test-logs
@@ -80,6 +94,7 @@ jobs:
           echo "Error context prepared."
 
       - name: Create issue for auto-fix
+        if: ${{ !env.ACT }}
         id: create-issue
         uses: actions/github-script@v7
         with:
@@ -109,8 +124,17 @@ jobs:
 
             return issue.data.number;
 
-      - name: Wait for Claude to process
+      - name: Display results
         run: |
-          echo "Issue created for Claude to auto-fix the errors."
-          echo "Claude will analyze the errors and push fixes to the branch."
-          echo "Issue number: ${{ steps.create-issue.outputs.result }}"
+          if [ -z "$ACT" ]; then
+            echo "Issue created for Claude to auto-fix the errors."
+            echo "Claude will analyze the errors and push fixes to the branch."
+            echo "Issue number: ${{ steps.create-issue.outputs.result }}"
+          else
+            echo "Running in act (local) mode - GitHub API calls skipped"
+            echo "Error context prepared and would be sent to Claude in production"
+            if [ -f error-context.md ]; then
+              echo "=== Error Context ==="
+              cat error-context.md
+            fi
+          fi

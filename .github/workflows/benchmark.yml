@@ -1,5 +1,12 @@
 name: Benchmark
 
+# This workflow can be tested locally using act:
+#   act push                          # Test push event
+#   act pull_request                  # Test pull request event
+#   act workflow_dispatch             # Test manual trigger
+#   act -j benchmark                  # Run specific job
+# Note: PR comments and cache features will be skipped in act (local) mode
+
 on:
   push:
     branches: [main, master]
@@ -74,7 +81,7 @@ jobs:
           fi
 
       - name: Comment PR with benchmark results
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && !env.ACT
         continue-on-error: true
         uses: actions/github-script@v7
         with:

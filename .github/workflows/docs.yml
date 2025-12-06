@@ -1,5 +1,12 @@
 name: Documentation
 
+# This workflow can be tested locally using act:
+#   act push                          # Test push event
+#   act pull_request                  # Test pull request event
+#   act workflow_dispatch             # Test manual trigger
+#   act -j build                      # Run specific job
+# Note: GitHub Pages deployment will be skipped in act (local) mode
+
 on:
   push:
     branches: [main, master]

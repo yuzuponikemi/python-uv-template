@@ -160,7 +160,9 @@ act -v
 - GitHub Actionsの実行時間を節約
 - オフラインでのテストが可能
 
-詳細は[LOCAL_TESTING.md](LOCAL_TESTING.md)を参照してください。
+詳細は以下を参照してください：
+- [LOCAL_TESTING.md](LOCAL_TESTING.md) - actの詳細なセットアップとトラブルシューティング
+- [.github/workflows/README.md](.github/workflows/README.md) - 各ワークフローのローカルテスト方法
 
 ## 依存関係の管理
 
